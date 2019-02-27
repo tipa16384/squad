@@ -2,62 +2,98 @@
 
 from itertools import combinations
 
-goal = (140,225,325)
-#goal = (315,325,340)
-#goal = (455,190,315)
-#training = (120,120,40)
-training = (100,160,20)
+def countLabels(squad, tag):
+	return sum([1 for x in squad if tag in x.getLabels()])
 
-squad = {
-	'Cecily': (24,118,32,'Hyur'),
-	'Nanasomi': (38,25,113,'Lalafell'),
-	'Hastaloeya': (108,25,45,'Roegadyn'),
-	'Elchi': (52,24,91,'Au Ra'),
-	'Totodi': (57,34,69,'Lalafell'),
-	'Rivienne': (22,112,28,'Elezen'),
-	'Sofine': (23,83,58,'Elezen'),
-	'Saiun': (101,23,40,'Au Ra')
-}
+class Recruit():
+	def __init__(self, name, phys, ment, tact, labels='', chemistry='', effect=''):
+		self.name = name
+		self.phys = phys
+		self.ment = ment
+		self.tact = tact
+		self.labels = labels
+		self.chemistry = chemistry
+		self.effect = effect
+	
+	def __str__(self):
+		return self.name
+	
+	def __repr__(self):
+		return self.name
+	
+	def getName(self):
+		return self.name
+	
+	def getLabels(self):
+		return self.labels
 
-maxscore = 10000
+	def getChemistry(self):
+		return self.chemistry
+
+	def getPhys(self, squad=None):
+		return self.phys
+
+	def getMent(self, squad=None):
+		return self.ment
+
+	def getTact(self, squad=None):
+		bonus = 0
+		if squad and 'tact' in self.effect:
+			toks = self.chemistry.split(' ')
+			#print "Chemistry",toks
+			count = countLabels(squad, toks[0])
+			if toks[1] == '<' and count < int(toks[2]):
+				ineffect = True
+			elif toks[1] == '>' and count > int(toks[2]):
+				ineffect = True
+			else:
+				ineffect = False;
+			if ineffect:
+				toks = self.effect.split(' ')
+				bonus = self.tact * float(toks[2])
+				#print "applying bonus",bonus
+		return self.tact + bonus
+
+goal = Recruit('Squadron Mission', 315, 325, 340)
+training = Recruit('Training', 80, 140, 60)
+
+squad = [
+	Recruit('Cecily', 25, 119, 32, 'Hyur Conjurer', 'Conjurer < 4', 'score * 0.2'),
+	Recruit('Nanasomi', 39, 25, 114, 'Lalafell Archer', 'Lancer > 0', 'score * 0.1'),
+	Recruit('Hastaloeya', 108, 26, 46, 'Roegadyn Marauder', 'Roegadyn < 2', 'tact * 0.1'),
+	Recruit('Elchi', 55, 24, 93, 'AuRa Lancer', 'Miqote > 0', 'score * 0.1'),
+	Recruit('Totodi', 58, 34, 70, 'Lalafell Pugilist'),
+	Recruit('Rivienne', 23, 113, 28, 'Elezen Conjurer', 'Lalafell > 0', 'score * 0.1'),
+	Recruit('Sofine', 23, 84, 59, 'Elezen Arcanist'),
+	Recruit('Saiun', 102, 23, 41, 'AuRa Marauder')
+]
+
+maxdiff = 10000
 best = 'Nobody'
 bestZeroes = 0
 
-def tacticalScore(a,b,c,d):
-	numHasta = sum([1 for x in [a,b,c,d] if x == 'Hastaloeya'])
-	#print [squad[x][3] for x in [a,b,c,d]]
-	numRoe = sum([1 for x in [a,b,c,d] if squad[x][3] == 'Roegadyn'])
-	tacticalScore = sum([squad[x][2] for x in [a,b,c,d]])
-	#print [a,b,c,d], numHasta, numRoe
+for xyz in combinations(squad, 4):
+	phys = sum([x.getPhys(xyz) for x in xyz])
+	ment = sum([x.getMent(xyz) for x in xyz])
+	tact = sum([x.getTact(xyz) for x in xyz])
 	
-	if numHasta is 1 and numRoe is 1:
-		bonus = sum([squad[x][2] * 0.1 for x in [a,b,c,d] if x == 'Hastaloeya'])
-		tacticalScore += bonus
-		#print "bonus of {}".format(bonus)
+	dphys = max(0,goal.getPhys() - training.getPhys() - phys)
+	dment = max(0,goal.getMent() - training.getMent() - ment)
+	dtact = max(0,goal.getTact() - training.getTact() - tact)
 	
-	return tacticalScore
+	#print xyz, dphys, dment, dtact
 
-for a1,b1,c1,d1 in combinations(squad, 4):
-	a = squad[a1]
-	b = squad[b1]
-	c = squad[c1]
-	d = squad[d1]
-
-	s0 = max(0,goal[0] - training[0] - a[0] -  b[0] - c[0] - d[0])
-	s1 = max(0,goal[1] - training[1] - a[1] -  b[1] - c[1] - d[1])
-	s2 = max(0,goal[2] - training[2] - tacticalScore(a1,b1,c1,d1))
-	score = s0 + s1 + s2
-	zeroes = 0 if s0 else 1
-	zeroes += 0 if s1 else 1
-	zeroes += 0 if s2 else 1
+	diff = dphys + dment + dtact
+	zeroes = sum([1 for z in [dphys, dment, dtact] if not z])
+	
 	if zeroes < bestZeroes:
 		continue
 	elif zeroes > bestZeroes:
-		maxscore = 10000
+		maxdiff = 10000
 	bestZeroes = zeroes
-	if score < maxscore:
-		best = (a1,b1,c1,d1)
-		maxscore = score
-		print s0,s1,s2,best,score,zeroes
+	if diff < maxdiff:
+		best = xyz
+		maxdiff = diff
+		print dphys,dment,dtact,best,diff,zeroes
 
-print best,maxscore
+print best,maxdiff
