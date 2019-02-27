@@ -5,6 +5,8 @@ from itertools import combinations
 def countLabels(squad, tag):
 	return sum([1 for x in squad if tag in x.getLabels()])
 
+
+
 class Recruit():
 	def __init__(self, name, phys, ment, tact, labels='', chemistry='', effect=''):
 		self.name = name
@@ -31,14 +33,23 @@ class Recruit():
 		return self.chemistry
 
 	def getPhys(self, squad=None):
+		if squad:
+			return self.getStat('phys', lambda x: x.getPhys(), squad)
 		return self.phys
 
 	def getMent(self, squad=None):
+		if squad:
+			return self.getStat('ment', lambda x: x.getMent(), squad)
 		return self.ment
 
 	def getTact(self, squad=None):
+		if squad:
+			return self.getStat('tact', lambda x: x.getTact(), squad)
+		return self.tact
+	
+	def getStat(self, stat, statter, squad=None):
 		bonus = 0
-		if squad and 'tact' in self.effect:
+		if squad and stat in self.effect:
 			toks = self.chemistry.split(' ')
 			#print "Chemistry",toks
 			count = countLabels(squad, toks[0])
@@ -50,9 +61,10 @@ class Recruit():
 				ineffect = False;
 			if ineffect:
 				toks = self.effect.split(' ')
-				bonus = self.tact * float(toks[2])
+				bonus = statter(self) * float(toks[2])
 				#print "applying bonus",bonus
-		return self.tact + bonus
+		return statter(self) + bonus
+
 
 goal = Recruit('Squadron Mission', 315, 325, 340)
 training = Recruit('Training', 80, 140, 60)
