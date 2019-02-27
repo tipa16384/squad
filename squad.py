@@ -123,10 +123,10 @@ def trainingDistance(t1,t2):
 	return pow(pow(p,2)+pow(m,2)+pow(t,2), 0.5)
 
 squad = [
-	Recruit('Cecily', 25, 120, 33, 'Hyur Conjurer', 'Conjurer < 4', 'score * 0.2'),
-	Recruit('Nanasomi', 40, 26, 114, 'Lalafell Archer', 'Lancer > 0', 'score * 0.1'),
-	Recruit('Hastaloeya', 110, 26, 46, 'Roegadyn Marauder', 'Roegadyn < 2', 'tact * 0.1'),
-	Recruit('Elchi', 56, 24, 94, 'AuRa Lancer', 'Miqote > 0', 'score * 0.1'),
+	Recruit('Cecily', 26, 120, 34, 'Hyur Conjurer', 'Conjurer < 4', 'score * 0.2'),
+	Recruit('Nanasomi', 41, 26, 115, 'Lalafell Archer', 'Lancer > 0', 'score * 0.1'),
+	Recruit('Hastaloeya', 112, 26, 46, 'Roegadyn Marauder', 'Roegadyn < 2', 'tact * 0.1'),
+	Recruit('Elchi', 56, 25, 95, 'AuRa Lancer', 'Miqote > 0', 'score * 0.1'),
 	Recruit('Totodi', 58, 35, 71, 'Lalafell Pugilist'),
 	Recruit('Rivienne', 23, 114, 29, 'Elezen Conjurer', 'Lalafell > 0', 'score * 0.1'),
 	Recruit('Sofine', 24, 84, 60, 'Elezen Arcanist'),
