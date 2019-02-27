@@ -2,10 +2,14 @@
 
 from itertools import combinations
 
+maxdiff = 10000
+best = 'Nobody'
+bestZeroes = 0
+bestTraining = None
+trainingPoints = 280
+
 def countLabels(squad, tag):
 	return sum([1 for x in squad if tag in x.getLabels()])
-
-
 
 class Recruit():
 	def __init__(self, name, phys, ment, tact, labels='', chemistry='', effect=''):
@@ -18,7 +22,7 @@ class Recruit():
 		self.effect = effect
 	
 	def __str__(self):
-		return self.name
+		return "{} ({},{},{})".format(self.name,self.phys,self.ment,self.tact)
 	
 	def __repr__(self):
 		return self.name
@@ -65,26 +69,17 @@ class Recruit():
 				#print "applying bonus",bonus
 		return statter(self) + bonus
 
+def getTraining(trainingPoints):
+	increment = 20
+	for phys in range(0,trainingPoints+increment,increment):
+		for ment in range(0,trainingPoints+increment,increment):
+			if phys + ment > trainingPoints:
+				break
+			yield Recruit('Training', phys, ment, trainingPoints - phys - ment)
 
-goal = Recruit('Squadron Mission', 315, 325, 340)
-training = Recruit('Training', 80, 140, 60)
-
-squad = [
-	Recruit('Cecily', 25, 119, 32, 'Hyur Conjurer', 'Conjurer < 4', 'score * 0.2'),
-	Recruit('Nanasomi', 39, 25, 114, 'Lalafell Archer', 'Lancer > 0', 'score * 0.1'),
-	Recruit('Hastaloeya', 108, 26, 46, 'Roegadyn Marauder', 'Roegadyn < 2', 'tact * 0.1'),
-	Recruit('Elchi', 55, 24, 93, 'AuRa Lancer', 'Miqote > 0', 'score * 0.1'),
-	Recruit('Totodi', 58, 34, 70, 'Lalafell Pugilist'),
-	Recruit('Rivienne', 23, 113, 28, 'Elezen Conjurer', 'Lalafell > 0', 'score * 0.1'),
-	Recruit('Sofine', 23, 84, 59, 'Elezen Arcanist'),
-	Recruit('Saiun', 102, 23, 41, 'AuRa Marauder')
-]
-
-maxdiff = 10000
-best = 'Nobody'
-bestZeroes = 0
-
-for xyz in combinations(squad, 4):
+def mission(xyz,training):
+	global maxdiff, best, bestZeroes, bestTraining
+	
 	phys = sum([x.getPhys(xyz) for x in xyz])
 	ment = sum([x.getMent(xyz) for x in xyz])
 	tact = sum([x.getTact(xyz) for x in xyz])
@@ -99,13 +94,33 @@ for xyz in combinations(squad, 4):
 	zeroes = sum([1 for z in [dphys, dment, dtact] if not z])
 	
 	if zeroes < bestZeroes:
-		continue
+		return
 	elif zeroes > bestZeroes:
 		maxdiff = 10000
 	bestZeroes = zeroes
 	if diff < maxdiff:
 		best = xyz
 		maxdiff = diff
-		print dphys,dment,dtact,best,diff,zeroes
+		bestTraining = training
+		print dphys,dment,dtact,best,diff,zeroes,training
 
-print best,maxdiff
+squad = [
+	Recruit('Cecily', 25, 120, 33, 'Hyur Conjurer', 'Conjurer < 4', 'score * 0.2'),
+	Recruit('Nanasomi', 40, 26, 114, 'Lalafell Archer', 'Lancer > 0', 'score * 0.1'),
+	Recruit('Hastaloeya', 110, 26, 46, 'Roegadyn Marauder', 'Roegadyn < 2', 'tact * 0.1'),
+	Recruit('Elchi', 56, 24, 94, 'AuRa Lancer', 'Miqote > 0', 'score * 0.1'),
+	Recruit('Totodi', 58, 35, 71, 'Lalafell Pugilist'),
+	Recruit('Rivienne', 23, 114, 29, 'Elezen Conjurer', 'Lalafell > 0', 'score * 0.1'),
+	Recruit('Sofine', 24, 84, 60, 'Elezen Arcanist'),
+	Recruit('Saiun', 102, 24, 42, 'AuRa Marauder')
+]
+
+#goal = Recruit('Flagged Mission: Crystal Recovery', 315, 325, 340)
+#goal = Recruit('Allied Maneuvers', 310, 480, 170)
+goal = Recruit('Search and Rescue', 185, 310, 465)
+
+for xyz in combinations(squad, 4):
+	for training in getTraining(trainingPoints):
+		mission(xyz, training)
+		
+print best,maxdiff,bestTraining
