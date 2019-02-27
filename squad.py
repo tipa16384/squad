@@ -2,11 +2,13 @@
 
 from itertools import combinations
 
-maxdiff = 10000
+bignum = 10000
+maxdiff = bignum
 best = 'Nobody'
 bestZeroes = 0
 bestTraining = None
 trainingPoints = 280
+bestTrainingDist = bignum
 
 def countLabels(squad, tag):
 	return sum([1 for x in squad if tag in x.getLabels()])
@@ -77,8 +79,8 @@ def getTraining(trainingPoints):
 				break
 			yield Recruit('Training', phys, ment, trainingPoints - phys - ment)
 
-def mission(xyz,training):
-	global maxdiff, best, bestZeroes, bestTraining
+def mission(xyz, training, initialTraining):
+	global maxdiff, best, bestZeroes, bestTraining, bestTrainingDist
 	
 	phys = sum([x.getPhys(xyz) for x in xyz])
 	ment = sum([x.getMent(xyz) for x in xyz])
@@ -96,13 +98,29 @@ def mission(xyz,training):
 	if zeroes < bestZeroes:
 		return
 	elif zeroes > bestZeroes:
-		maxdiff = 10000
+		maxdiff = bignum
+		bestTrainingDist = bignum
+		
 	bestZeroes = zeroes
-	if diff < maxdiff:
+	
+	trainingDist = trainingDistance(training, initialTraining)
+	
+	if diff == maxdiff and trainingDist < bestTrainingDist:
+		bestTraining = training
+		bestTrainingDist = trainingDist
+		print "Better training",training,bestTrainingDist
+	elif diff < maxdiff:
 		best = xyz
 		maxdiff = diff
 		bestTraining = training
-		print dphys,dment,dtact,best,diff,zeroes,training
+		bestTrainingDist = trainingDist
+		print dphys,dment,dtact,best,diff,zeroes,training,bestTrainingDist
+
+def trainingDistance(t1,t2):
+	p = t1.getPhys() - t2.getPhys()
+	m = t1.getMent() - t2.getMent()
+	t = t1.getTact() - t2.getTact()
+	return pow(pow(p,2)+pow(m,2)+pow(t,2), 0.5)
 
 squad = [
 	Recruit('Cecily', 25, 120, 33, 'Hyur Conjurer', 'Conjurer < 4', 'score * 0.2'),
@@ -115,12 +133,13 @@ squad = [
 	Recruit('Saiun', 102, 24, 42, 'AuRa Marauder')
 ]
 
-#goal = Recruit('Flagged Mission: Crystal Recovery', 315, 325, 340)
+goal = Recruit('Flagged Mission: Crystal Recovery', 315, 325, 340)
 #goal = Recruit('Allied Maneuvers', 310, 480, 170)
-goal = Recruit('Search and Rescue', 185, 310, 465)
+#goal = Recruit('Search and Rescue', 185, 310, 465)
+initialTraining = Recruit('Initial Training', 80, 140, 60)
 
 for xyz in combinations(squad, 4):
 	for training in getTraining(trainingPoints):
-		mission(xyz, training)
+		mission(xyz, training, initialTraining)
 		
 print best,maxdiff,bestTraining
