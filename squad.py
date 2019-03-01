@@ -144,19 +144,22 @@ goals = [
 	Recruit('Stronghold Assault', 40, 530, 275, 385)
 ]
 
-initialTraining = Recruit('Initial Training', 3, 160, 120, 120)
-
-goals.sort(key = lambda x: x.getLevel(), reverse = True)
-
-for goal in goals:
-	wins = []
+def getWins(initialTraining, goal):
 	platoon = [x for x in squad if x.getLevel() >= goal.getLevel()]
 	
 	for xyz in combinations(platoon, 4):
 		for training in getTraining(trainingPoints):
 			win = mission(xyz, training, initialTraining, goal)
 			if win:
-				wins.append(win)
+				yield win
+
+
+initialTraining = Recruit('Initial Training', 3, 160, 120, 120)
+
+goals.sort(key = lambda x: x.getLevel(), reverse = True)
+
+for goal in goals:
+	wins = [win for win in getWins(initialTraining, goal)]
 	
 	if wins:
 		print "Lv.{} mission: {}".format(goal.getLevel(), goal.getName())
