@@ -2,13 +2,7 @@
 
 from itertools import combinations
 
-bignum = 10000
-maxdiff = bignum
-best = 'Nobody'
-bestZeroes = 0
-bestTraining = None
-trainingPoints = 280
-bestTrainingDist = bignum
+trainingPoints = 400
 
 def countLabels(squad, tag):
 	return sum([1 for x in squad if tag in x.getLabels()])
@@ -91,46 +85,23 @@ def getTraining(trainingPoints):
 				break
 			yield Recruit('Training', 0, phys, ment, trainingPoints - phys - ment)
 
-def sumstat(squad, goal, statter):
-	return sum([statter(x, xyz, goal) for x in xyz])
-			
 def mission(xyz, training, initialTraining, goal):
-	global maxdiff, best, bestZeroes, bestTraining, bestTrainingDist
-	
-	phys = sumstat(xyz, goal, lambda x,y,z: x.getPhys(y,z))
-	ment = sumstat(xyz, goal, lambda x,y,z: x.getMent(y,z))
-	tact = sumstat(xyz, goal, lambda x,y,z: x.getTact(y,z))
+	phys = sum([x.getPhys(xyz, goal) for x in xyz])
+	ment = sum([x.getMent(xyz, goal) for x in xyz])
+	tact = sum([x.getTact(xyz, goal) for x in xyz])
 	
 	dphys = max(0,goal.getPhys() - training.getPhys() - phys)
 	dment = max(0,goal.getMent() - training.getMent() - ment)
 	dtact = max(0,goal.getTact() - training.getTact() - tact)
 	
-	#print xyz, dphys, dment, dtact
-
 	diff = dphys + dment + dtact
 	zeroes = sum([1 for z in [dphys, dment, dtact] if not z])
 	
-	if zeroes < bestZeroes:
-		return
-	elif zeroes > bestZeroes:
-		maxdiff = bignum
-		bestTrainingDist = bignum
+	if zeroes == 3:
+		return (xyz,training)
+	else:
+		return None
 		
-	bestZeroes = zeroes
-	
-	trainingDist = trainingDistance(training, initialTraining)
-	
-	if diff == maxdiff and trainingDist < bestTrainingDist:
-		bestTraining = training
-		bestTrainingDist = trainingDist
-		#print "Better training",training,bestTrainingDist
-	elif diff < maxdiff:
-		best = xyz
-		maxdiff = diff
-		bestTraining = training
-		bestTrainingDist = trainingDist
-		print dphys,dment,dtact,best,diff,zeroes
-
 def trainingDistance(t1,t2):
 	p = t1.getPhys() - t2.getPhys()
 	m = t1.getMent() - t2.getMent()
@@ -138,28 +109,65 @@ def trainingDistance(t1,t2):
 	return pow(pow(p,2)+pow(m,2)+pow(t,2), 0.5)
 
 squad = [
-	Recruit('Cecily', 40, 26, 120, 34, 'Hyur Conjurer', 'Conjurer < 4', 'score * 0.2'),
-	Recruit('Nanasomi', 40, 41, 26, 115, 'Lalafell Archer', 'Lancer > 0', 'score * 0.1'),
-	Recruit('Hastaloeya', 40, 112, 26, 46, 'Roegadyn Marauder', 'Roegadyn < 2', 'tact * 0.1'),
-	Recruit('Elchi', 40, 56, 25, 95, 'AuRa Lancer', 'Miqote > 0', 'score * 0.1'),
-	Recruit('Totodi', 40, 59, 35, 72, 'Lalafell Pugilist'),
-	Recruit('Rivienne', 40, 24, 114, 30, 'Elezen Conjurer', 'Lalafell > 0', 'score * 0.1'),
-	Recruit('Sofine', 40, 24, 84, 60, 'Elezen Arcanist'),
-	Recruit('Saiun', 40, 103, 24, 43, 'AuRa Marauder')
+	Recruit('Cecily', 45, 26, 124, 34, 'Hyur Conjurer', 'Conjurer < 4', 'score * 0.2'),
+	Recruit('Nanasomi', 46, 42, 26, 118, 'Lalafell Archer', 'Lancer > 0', 'score * 0.1'),
+	Recruit('Hastaloeya', 47, 115, 27, 46, 'Roegadyn Marauder', 'Roegadyn < 2', 'tact * 0.1'),
+	Recruit('Elchi', 44, 58, 26, 98, 'AuRa Lancer', 'Miqote > 0', 'score * 0.1'),
+	Recruit('Totodi', 37, 60, 36, 72, 'Lalafell Pugilist'),
+	Recruit('Rivienne', 38, 24, 115, 31, 'Elezen Conjurer', 'Lalafell > 0', 'score * 0.1'),
+	Recruit('Sofine', 38, 24, 85, 61, 'Elezen Arcanist'),
+	Recruit('Koenbryda', 40, 96, 24, 54, 'Roegadyn Gladiator')
 ]
 
-#goal = Recruit('Flagged Mission: Crystal Recovery', 40, 315, 325, 340)
-#goal = Recruit('Allied Maneuvers', 40, 310, 480, 170)
-#goal = Recruit('Search and Rescue', 40, 185, 310, 465)
-#goal = Recruit('Frontline Support', 40, 410, 145, 270, 'Conjurer')
-#goal = Recruit('Officer Escort', 40, 130, 440, 270)
-#goal = Recruit('Border Patrol', 40, 140, 450, 280, 'Miqote')
-goal = Recruit('Stronghold Recon', 40, 440, 300, 175, 'Lalafell Hyur')
+goals = [
+	#Recruit('Flagged Mission: Crystal Recovery', 40, 315, 325, 340),
+	Recruit('Frontline Support', 20, 410, 145, 270, 'Conjurer'),
+	Recruit('Officer Escort', 20, 130, 440, 270),
+	Recruit('Border Patrol', 25, 140, 450, 280, 'Miqote'),
+	Recruit('Stronghold Recon', 30, 440, 300, 175, 'Lalafell Hyur'),
+	Recruit('Allied Maneuvers', 35, 310, 480, 170, 'Archer'),
+	Recruit('Search and Rescue', 35, 185, 310, 465),
+	Recruit('Flagged Mission: Sapper Strike', 50, 370, 355, 345, 'Conjurer Elezen'),
+	Recruit('Black Market Crackdown', 40, 245, 560, 385, 'Rogue'),
+	Recruit('Imperial Recon', 40, 265, 385, 540, 'Marauder'),
+	Recruit('Imperial Pursuit', 40, 385, 560, 245, 'Arcanist'),
+	Recruit('Imperial Feint', 40, 385, 265, 540, 'AuRa Hyur'),
+	Recruit('Criminal Pursuit', 40, 530, 385, 275, 'Lalafell Arcanist Conjurer'),
+	Recruit('Primal Recon', 50, 430, 295, 600, 'Marauder Miqote Arcanist'),
+	Recruit('Counter-magitek Exercises', 50, 430, 620, 275, 'Conjurer'),
+	Recruit('Infiltrate and Rescue', 50, 590, 430, 305, 'Thaumaturge Gladiator'),
+	Recruit('Cult Crackdown', 50, 430, 295, 600, 'Miqote Thaumaturge'),
+	Recruit('Supply Wagon Destruction', 40, 385, 560, 245, 'Pugilist'),
+	Recruit('Outlaw Subjugation', 50, 590, 430, 305),
+	Recruit('Supply Line Disruption', 40, 530, 385, 275),
+	Recruit('Chimerical Elimination', 40, 385, 265, 540),
+	Recruit('Stronghold Assault', 40, 530, 275, 385)
+]
 
-initialTraining = Recruit('Initial Training', 40, 80, 140, 60)
+initialTraining = Recruit('Initial Training', 3, 160, 120, 120)
 
-for xyz in combinations(squad, 4):
-	for training in getTraining(trainingPoints):
-		mission(xyz, training, initialTraining, goal)
-		
-print best,maxdiff,bestTraining
+goals.sort(key = lambda x: x.getLevel(), reverse = True)
+
+for goal in goals:
+	wins = []
+	platoon = [x for x in squad if x.getLevel() >= goal.getLevel()]
+	
+	for xyz in combinations(platoon, 4):
+		for training in getTraining(trainingPoints):
+			win = mission(xyz, training, initialTraining, goal)
+			if win:
+				wins.append(win)
+	
+	if wins:
+		print "Lv.{} mission: {}".format(goal.getLevel(), goal.getName())
+		if goal.getLabels():
+			print "   Affinities: {}".format(goal.getLabels())
+		wins.sort(key = lambda x: trainingDistance(x[1], initialTraining))
+		for win in wins:
+			print "   Best training: Physical={}, Mental={}, Tactical={}".format(
+				win[1].getPhys(),win[1].getMent(),win[1].getTact())
+			print "   Best team of {}: {}".format(len(wins), ', '.join([x.getName()+' ('+str(x.getLevel())+')' for x in win[0]]))
+			break
+		print
+
+
