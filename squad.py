@@ -1,4 +1,4 @@
-#/usr/bin/python
+#!/usr/bin/python
 
 from itertools import combinations
 
@@ -85,7 +85,7 @@ def getTraining(trainingPoints):
 				break
 			yield Recruit('Training', 0, phys, ment, trainingPoints - phys - ment)
 
-def mission(xyz, training, initialTraining, goal):
+def mission(xyz, training, initialTraining, goal, goalZeroes):
 	phys = sum([x.getPhys(xyz, goal) for x in xyz])
 	ment = sum([x.getMent(xyz, goal) for x in xyz])
 	tact = sum([x.getTact(xyz, goal) for x in xyz])
@@ -97,8 +97,8 @@ def mission(xyz, training, initialTraining, goal):
 	diff = dphys + dment + dtact
 	zeroes = sum([1 for z in [dphys, dment, dtact] if not z])
 	
-	if zeroes == 3:
-		return (xyz,training)
+	if zeroes == goalZeroes:
+		return (xyz,training,diff)
 	else:
 		return None
 		
@@ -109,66 +109,84 @@ def trainingDistance(t1,t2):
 	return pow(pow(p,2)+pow(m,2)+pow(t,2), 0.5)
 
 squad = [
-	Recruit('Cecily', 45, 26, 124, 34, 'Hyur Conjurer', 'Conjurer < 4', 'score * 0.2'),
-	Recruit('Nanasomi', 46, 42, 26, 118, 'Lalafell Archer', 'Lancer > 0', 'score * 0.1'),
-	Recruit('Hastaloeya', 47, 115, 27, 46, 'Roegadyn Marauder', 'Roegadyn < 2', 'tact * 0.1'),
-	Recruit('Elchi', 44, 58, 26, 98, 'AuRa Lancer', 'Miqote > 0', 'score * 0.1'),
-	Recruit('Totodi', 37, 60, 36, 72, 'Lalafell Pugilist'),
-	Recruit('Rivienne', 38, 24, 115, 31, 'Elezen Conjurer', 'Lalafell > 0', 'score * 0.1'),
-	Recruit('Sofine', 38, 24, 85, 61, 'Elezen Arcanist'),
-	Recruit('Koenbryda', 40, 96, 24, 54, 'Roegadyn Gladiator')
+	Recruit('Cecily', 51, 28, 131, 37, 'Hyur Conjurer', 'Archer > 1', 'score * 0.3'),
+	Recruit('Nanasomi', 51, 45, 28, 123, 'Lalafell Archer', 'Hyur > 0', 'ment * 0.1'),
+	Recruit('Hastaloeya', 52, 120, 28, 50, 'Roegadyn Marauder', 'Roegadyn < 2', 'tact * 0.1'),
+	Recruit('Elchi', 51, 61, 28, 107, 'AuRa Lancer', 'Pugilist > 0', 'score * 0.1'),
+	Recruit('Totodi', 42, 63, 37, 78, 'Lalafell Pugilist', 'Level > 50', 'ment * 0.15'),
+	Recruit('Rivienne', 44, 26, 122, 34, 'Elezen Conjurer', 'Elezen > 0', 'score * 0.1'),
+	Recruit('Sofine', 44, 26, 91, 65, 'Elezen Arcanist'),
+	Recruit('Koenbryda', 44, 99, 26, 57, 'Roegadyn Gladiator', 'Rogue > 0', 'phys * 0.15')
 ]
 
 goals = [
 	#Recruit('Flagged Mission: Crystal Recovery', 40, 315, 325, 340),
-	Recruit('Frontline Support', 20, 410, 145, 270, 'Conjurer'),
-	Recruit('Officer Escort', 20, 130, 440, 270),
-	Recruit('Border Patrol', 25, 140, 450, 280, 'Miqote'),
-	Recruit('Stronghold Recon', 30, 440, 300, 175, 'Lalafell Hyur'),
-	Recruit('Allied Maneuvers', 35, 310, 480, 170, 'Archer'),
-	Recruit('Search and Rescue', 35, 185, 310, 465),
-	Recruit('Flagged Mission: Sapper Strike', 50, 370, 355, 345, 'Conjurer Elezen'),
-	Recruit('Black Market Crackdown', 40, 245, 560, 385, 'Rogue'),
-	Recruit('Imperial Recon', 40, 265, 385, 540, 'Marauder'),
-	Recruit('Imperial Pursuit', 40, 385, 560, 245, 'Arcanist'),
-	Recruit('Imperial Feint', 40, 385, 265, 540, 'AuRa Hyur'),
-	Recruit('Criminal Pursuit', 40, 530, 385, 275, 'Lalafell Arcanist Conjurer'),
-	Recruit('Primal Recon', 50, 430, 295, 600, 'Marauder Miqote Arcanist'),
-	Recruit('Counter-magitek Exercises', 50, 430, 620, 275, 'Conjurer'),
-	Recruit('Infiltrate and Rescue', 50, 590, 430, 305, 'Thaumaturge Gladiator'),
-	Recruit('Cult Crackdown', 50, 430, 295, 600, 'Miqote Thaumaturge'),
-	Recruit('Supply Wagon Destruction', 40, 385, 560, 245, 'Pugilist'),
+	Recruit('Frontline Support', 20, 410, 270, 145, 'AuRa Marauder'),
+	Recruit('Officer Escort', 20, 415, 275, 150, 'Miqote'),
+	Recruit('Border Patrol', 25, 280, 450, 140, 'Gladiator'),
+	Recruit('Stronghold Recon', 30, 155, 465, 295),
+	Recruit('Allied Maneuvers', 35, 185, 310, 465),
+	Recruit('Search and Rescue', 35, 310, 185, 465, 'Arcanist'),
+	#Recruit('Flagged Mission: Sapper Strike', 50, 370, 355, 345, 'Conjurer Elezen'),
+	Recruit('Black Market Crackdown', 40, 530, 385, 275, 'Pugilist Arcanist'),
+	Recruit('Imperial Recon', 40, 385, 560, 245, 'Conjurer'),
+	Recruit('Imperial Pursuit', 40, 265, 385, 540, 'Lancer Miqote'),
+	Recruit('Imperial Feint', 40, 530, 275, 385, 'Roegadyn Hyur'),
+	Recruit('Criminal Pursuit', 40, 265, 385, 540, 'Rogue'),
+	Recruit('Primal Recon', 50, 275, 520, 430, 'Pugilist Elezen'),
+	Recruit('Counter-magitek Exercises', 50, 590, 305, 430),
+	Recruit('Infiltrate and Rescue', 50, 295, 430, 600, 'Gladiator Roegadyn'),
+	Recruit('Cult Crackdown', 50, 590, 305, 430, 'Arcanist Pugilist'),
+	Recruit('Supply Wagon Destruction', 40, 530, 275, 385, 'Marauder Hyur Lancer'),
+	Recruit('Voidsent Elimination', 50, 295, 430, 600, 'Miqote AuRa Hyur'),
+	Recruit('Armor Annihilation', 50, 430, 620, 275),
+	Recruit('Invasive Testing', 50, 590, 430, 305, 'Rogue'),
+	Recruit('Imposter Alert', 50, 430, 295, 600, 'Conjurer'),
 	Recruit('Outlaw Subjugation', 50, 590, 430, 305),
-	Recruit('Supply Line Disruption', 40, 530, 385, 275),
-	Recruit('Chimerical Elimination', 40, 385, 265, 540),
-	Recruit('Stronghold Assault', 40, 530, 275, 385)
+	Recruit('Supply Line Disruption', 40, 245, 560, 385, 'Lancer'),
+	Recruit('Chimerical Elimination', 40, 245, 560, 385, 'Hyur Thaumaturge'),
+	Recruit('Stronghold Assault', 40, 385, 265, 540, 'Lancer')
 ]
 
-def getWins(initialTraining, goal):
+def getWins(initialTraining, goal, goalZeroes = 3):
 	platoon = [x for x in squad if x.getLevel() >= goal.getLevel()]
 	
 	for xyz in combinations(platoon, 4):
 		for training in getTraining(trainingPoints):
-			win = mission(xyz, training, initialTraining, goal)
+			win = mission(xyz, training, initialTraining, goal, goalZeroes)
 			if win:
 				yield win
 
 
-initialTraining = Recruit('Initial Training', 3, 160, 120, 120)
+initialTraining = Recruit('Initial Training', 3, 220, 120, 60)
 
+def wincmp(a,b):
+	global initialTraining
+	res = int(round(a[2] - b[2]))
+	if res:
+		return res
+	return int(round(trainingDistance(a[1], initialTraining) - trainingDistance(b[1], initialTraining)))
+				
 goals.sort(key = lambda x: x.getLevel(), reverse = True)
 
 for goal in goals:
-	wins = [win for win in getWins(initialTraining, goal)]
+	totalVictory = True
+	for goalZeroes in range(3,1,-1):
+		wins = [win for win in getWins(initialTraining, goal, goalZeroes)]
+		if wins:
+			break
+		totalVictory = False
 	
 	if wins:
 		print "Lv.{} mission: {}".format(goal.getLevel(), goal.getName())
+		if totalVictory:
+			print "   TOTAL VICTORY!!!!!!!!!!!"
 		if goal.getLabels():
 			print "   Affinities: {}".format(goal.getLabels())
-		wins.sort(key = lambda x: trainingDistance(x[1], initialTraining))
+		wins.sort(cmp = wincmp)
 		for win in wins:
-			print "   Best training: Physical={}, Mental={}, Tactical={}".format(
-				win[1].getPhys(),win[1].getMent(),win[1].getTact())
+			print "   Best training: Physical={}, Mental={}, Tactical={} Diff={}".format(
+				win[1].getPhys(),win[1].getMent(),win[1].getTact(), win[2])
 			print "   Best team of {}: {}".format(len(wins), ', '.join([x.getName()+' ('+str(x.getLevel())+')' for x in win[0]]))
 			break
 		print
