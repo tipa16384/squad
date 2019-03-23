@@ -1,0 +1,34 @@
+type,name,level,physical,mental,tactical,labels,chemistry,effect
+Initial Training,Initial Training,0,220,60,120,,,
+Squad,Cecily,55,30,134,40,Hyur Conjurer,Conjurer > 0,tact * 0.2
+Squad,Nanasomi,56,49,30,127,Lalafell Archer,Roegadyn > 0,ment * 0.1
+Squad,Hastaloeya,55,122,30,52,Roegadyn Marauder,Roegadyn < 2,tact * 0.1
+Squad,Elchi,54,63,29,110,AuRa Lancer,Marauder > 0,score * 0.4
+Squad,Rivienne,50,28,129,37,Elezen Conjurer,Elezen > 0,score * 0.1
+Squad,Sofine,51,28,99,69,Elezen Arcanist,Pugilist > 0,phys * 0.15
+Squad,Koenbryda,51,108,28,60,Roegadyn Gladiator,Rogue > 0,phys * 0.15
+Squad,Khorchi,52,70,40,88,AuRa Pugilist,,
+Missions,Frontline Support,20,265,140,420,Elezen,,
+Missions,Officer Escort,20,270,440,130,Lancer,,
+Missions,Border Patrol,25,425,285,160,Miqote,,
+Missions,Stronghold Recon,30,170,295,450,,,
+Missions,Allied Maneuvers,35,455,190,315,Conjurer Lalafell,,
+Missions,Search and Rescue,35,310,480,170,Conjurer,,
+Missions,Black Market Crackdown,40,385,560,245,Hyur Arcanist,,
+Missions,Chimerical Elimination,40,265,385,540,,,
+Missions,Criminal Pursuit,40,530,275,385,Thaumaturge Miquote,,
+Missions,Imperial Feint,40,245,560,385,Thaumaturge AuRa Gladiator,,
+Missions,Imperial Pursuit,40,530,275,385,Hyur,,
+Missions,Imperial Recon,40,385,265,540,Lalafell Miqote,,
+Missions,Stronghold Assault,40,530,385,275,,,
+Missions,Supply Line Disruption,40,265,385,540,Pugilist Archer Roegadyn,,
+Missions,Supply Wagon Destruction,40,245,560,385,,,
+Missions,Armor Annihilation,50,430,620,275,,,
+Missions,Counter-magitek Exercises,50,590,305,430,,,
+Missions,Cult Crackdown,50,590,305,430,Arcanist Pugilist,,
+Missions,Imposter Alert,50,430,295,600,Conjurer,,
+Missions,Infiltrate and Rescue,50,295,430,600,Gladiator Roegadyn,,
+Missions,Invasive Testing,50,590,430,305,Rogue,,
+Missions,Outlaw Subjugation,50,590,430,305,,,
+Missions,Primal Recon,50,275,520,430,Pugilist Elezen,,
+Missions,Voidsent Elimination,50,295,430,600,Miqote AuRa Hyur,,
