@@ -1,11 +1,13 @@
 #!/usr/bin/python
 
 from itertools import combinations
+from recruit import Recruit
 import csv
 
 trainingPoints = 400
 noTraining = False
-csvfile = 'squad.csv'
+#csvfile = 'squad.csv'
+csvfile = '/cygdrive/e/Downloads/squad - squad.csv'
 
 dividerSquad = 'Squad'
 dividerMission = 'Missions'
@@ -14,110 +16,6 @@ dividerTraining = 'Initial Training'
 squad = []
 goals = []
 initialTraining = None
-
-def countLabels(squad, tag):
-	return sum([1 for x in squad if tag in x.getLabels()])
-
-class Recruit():
-	def __init__(self, name, level, phys, ment, tact, labels='', chemistry='', effect=''):
-		self.name = name
-		self.level = level
-		self.phys = phys
-		self.ment = ment
-		self.tact = tact
-		self.labels = labels
-		self.chemistry = chemistry
-		self.effect = effect
-		
-	def __eq__(self, other):
-		#print "Compare {} to {}".format(self, other)
-		if self.phys != other.phys:
-			return False
-		if self.ment != other.ment:
-			return False
-		if self.tact != other.tact:
-			return False
-		return True
-	
-	def __ne__(self, other):
-		return not self.__eq__(other)
-	
-	def __str__(self):
-		return "{} ({},{},{})".format(self.name,self.phys,self.ment,self.tact)
-	
-	def __repr__(self):
-		return self.name
-	
-	def getName(self):
-		return self.name
-	
-	def getLevel(self):
-		return self.level
-	
-	def getLabels(self):
-		return self.labels
-
-	def getChemistry(self):
-		return self.chemistry
-	
-	def getAffinity(self, goal):
-		if not goal or not self.labels or not goal.getLabels():
-			return False
-		toks = self.labels.split(' ')
-		affinities = goal.getLabels().split(' ')
-		return len([t for t in toks if t in affinities]) > 0
-
-	def getPhys(self, squad=None, goal=None):
-		if squad:
-			return self.getStat('phys', lambda x: x.getPhys(), squad, goal)
-		return self.phys
-
-	def getMent(self, squad=None, goal=None):
-		if squad:
-			return self.getStat('ment', lambda x: x.getMent(), squad, goal)
-		return self.ment
-
-	def getTact(self, squad=None, goal=None):
-		if squad:
-			return self.getStat('tact', lambda x: x.getTact(), squad, goal)
-		return self.tact
-	
-	def getStat(self, stat, statter, squad=None, goal=None):
-		bonus = 0
-		if squad and stat in self.effect:
-			toks = self.chemistry.split(' ')
-			#print "Chemistry",toks
-			count = countLabels(squad, toks[0])
-			
-			if toks[0] == 'Level':
-				count = self.getLevel()
-			
-			if toks[1] == '<' and count < int(toks[2]):
-				ineffect = True
-			elif toks[1] == '>' and count > int(toks[2]):
-				ineffect = True
-			else:
-				ineffect = False;
-			if ineffect:
-				toks = self.effect.split(' ')
-				bonus = statter(self) * float(toks[2])
-		if self.getAffinity(goal):
-			bonus *= 2
-		return statter(self) + bonus
-	
-	def toDict(self, type):
-		dict = {}
-		# ['type', 'name', 'level', 'physical', 'mental', 'tactical', 'labels', 'chemistry', 'effect']
-		dict['type'] = type
-		dict['name'] = self.name
-		dict['level'] = self.level
-		dict['physical'] = self.phys
-		dict['mental'] = self.ment
-		dict['tactical'] = self.tact
-		dict['labels'] = self.labels
-		dict['chemistry'] = self.chemistry
-		dict['effect'] = self.effect
-		return dict
 
 def validTraining(training, trainingPoints):
 	#print 'testing',training,trainingPoints
@@ -147,7 +45,7 @@ def getTraining(initialTraining,trainingPoints):
 		yield opt
 		
 		# max of three training sessions
-		if opt.getLevel() >= 3:
+		if opt.getLevel() > 9:
 			continue
 		
 		newLevel = opt.getLevel()+1
@@ -163,7 +61,7 @@ def getTraining(initialTraining,trainingPoints):
 		
 		for v in variants:
 			if validTraining(v, trainingPoints) and v not in options:
-				#print '### adding',v,'from',opt
+				v.setHistory(opt.getHistory() + [opt])
 				options.append(v)
 		
 		optLen = len(options)
@@ -205,13 +103,13 @@ def getWins(initialTraining, goal, goalZeroes = 3):
 
 def wincmp(a,b):
 	global initialTraining
-	res = int(round(a[2] - b[2]))
+	res = abs(int(round(a[2] - b[2])))
 	if res:
 		return res
-	dist = int(round(trainingDistance(a[1], initialTraining) - trainingDistance(b[1], initialTraining)))
+	dist = abs(int(round(trainingDistance(a[1], initialTraining) - trainingDistance(b[1], initialTraining))))
 	if dist:
 		return dist
-	return sum([x.getLevel() for x in a[0]]) - sum([x.getLevel() for x in b[0]])
+	return abs(sum([x.getLevel() for x in a[0]]) - sum([x.getLevel() for x in b[0]]))
 
 def writeCsv():
 	with open(csvfile, 'w') as f:
@@ -265,14 +163,14 @@ for goal in goals:
 			print "   Affinities: {}".format(goal.getLabels())
 		wins.sort(cmp = wincmp)
 		
-		if totalVictory:
-			for win in wins:
-				for x in win[0]:
-					mvp[x.getName()] += 1
-
 		for win in wins:
+			for x in win[0]:
+				mvp[x.getName()] += 1
 			print "   Best training: Physical={}, Mental={}, Tactical={} Diff={} Effort={}".format(
 				win[1].getPhys(),win[1].getMent(),win[1].getTact(), win[2], win[1].getLevel())
+			if win[1].getHistory():
+				for h in win[1].getHistory():
+					print "      {}".format(h)
 			print "   Best team of {}: {}".format(len(wins), ', '.join([x.getName()+' ('+str(x.getLevel())+')' for x in win[0]]))
 			break
 		print
