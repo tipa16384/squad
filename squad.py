@@ -5,6 +5,7 @@ from recruit import Recruit
 import csv
 
 trainingPoints = 400
+maxTraining = 6
 noTraining = False
 #csvfile = 'squad.csv'
 csvfile = '/cygdrive/e/Downloads/squad - squad.csv'
@@ -45,7 +46,7 @@ def getTraining(initialTraining,trainingPoints):
 		yield opt
 		
 		# max of three training sessions
-		if opt.getLevel() > 9:
+		if opt.getLevel() > maxTraining:
 			continue
 		
 		newLevel = opt.getLevel()+1
