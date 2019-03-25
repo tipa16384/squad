@@ -1,8 +1,14 @@
 #!/usr/bin/python
 
+from __future__ import print_function
+import pickle
+import os.path
+from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
 from itertools import combinations
 from recruit import Recruit
-import csv
+import sys
 
 trainingPoints = 400
 maxTraining = 6
@@ -17,6 +23,13 @@ dividerTraining = 'Initial Training'
 squad = []
 goals = []
 initialTraining = None
+
+# If modifying these scopes, delete the file token.pickle.
+SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
+
+# The ID and range of a sample spreadsheet.
+SAMPLE_SPREADSHEET_ID = '1VYxKi_1jk1zm0F5tCT0BDaFUaBm6jAr9GEacl1c7GwE'
+SAMPLE_RANGE_NAME = 'squad!A2:I'
 
 def validTraining(training, trainingPoints):
 	#print 'testing',training,trainingPoints
@@ -112,77 +125,109 @@ def wincmp(a,b):
 		return dist
 	return abs(sum([x.getLevel() for x in a[0]]) - sum([x.getLevel() for x in b[0]]))
 
-def writeCsv():
-	with open(csvfile, 'w') as f:
-		fieldnames = ['type', 'name', 'level', 'physical', 'mental', 'tactical', 'labels', 'chemistry', 'effect']
-		writer = csv.DictWriter(f, fieldnames = fieldnames)
-		writer.writeheader()
-		writer.writerow(initialTraining.toDict(dividerTraining))
-		for s in squad:
-			writer.writerow(s.toDict(dividerSquad))
-		for g in goals:
-			writer.writerow(g.toDict(dividerMission))
-
 def readCsv():
 	global initialTraining, goals, squad
 	
-	with open(csvfile, 'r') as f:
-		reader = csv.DictReader(f)
-		for row in reader:
-			rec = Recruit(row['name'], int(row['level']), int(row['physical']), int(row['mental']), 
-				int(row['tactical']), row['labels'], row['chemistry'], row['effect'])
-			type = row['type']
-		
-			if type == dividerTraining:
-				initialTraining = rec
-			elif type == dividerSquad:
-				squad.append(rec)
-			elif type == dividerMission:
-				goals.append(rec)
+	"""Shows basic usage of the Sheets API.
+	Prints values from a sample spreadsheet.
+	"""
+	creds = None
+	# The file token.pickle stores the user's access and refresh tokens, and is
+	# created automatically when the authorization flow completes for the first
+	# time.
+	if os.path.exists('token.pickle'):
+		with open('token.pickle', 'rb') as token:
+			creds = pickle.load(token)
+	# If there are no (valid) credentials available, let the user log in.
+	if not creds or not creds.valid:
+		if creds and creds.expired and creds.refresh_token:
+			creds.refresh(Request())
+		else:
+			flow = InstalledAppFlow.from_client_secrets_file(
+				'credentials.json', SCOPES)
+			creds = flow.run_local_server()
+		# Save the credentials for the next run
+		with open('token.pickle', 'wb') as token:
+			pickle.dump(creds, token)
 
-readCsv()
-			
-goals.sort(key = lambda x: x.getLevel(), reverse = True)
+	service = build('sheets', 'v4', credentials=creds)
 
-mvp = {}
-for s in squad:
-	mvp[s.getName()] = 0
+	# Call the Sheets API
+	sheet = service.spreadsheets()
+	result = sheet.values().get(spreadsheetId=SAMPLE_SPREADSHEET_ID,
+							range=SAMPLE_RANGE_NAME).execute()
+	values = result.get('values', [])
 
-for goal in goals:
-	totalVictory = True
-	for goalZeroes in range(3,1,-1):
-		wins = [win for win in getWins(initialTraining, goal, goalZeroes)]
-		if wins:
-			break
-		totalVictory = False
+	if not values:
+		print('No data found.')
+		sys.exit(1)
 	
-	if wins:
-		print "Lv.{} mission: {}".format(goal.getLevel(), goal.getName())
-		if totalVictory:
-			print "   TOTAL VICTORY!!!!!!!!!!!"
-		if goal.getLabels():
-			print "   Affinities: {}".format(goal.getLabels())
-		wins.sort(cmp = wincmp)
-		
-		for win in wins:
-			for x in win[0]:
-				mvp[x.getName()] += 1
-			print "   Best training: Physical={}, Mental={}, Tactical={} Diff={} Effort={}".format(
-				win[1].getPhys(),win[1].getMent(),win[1].getTact(), win[2], win[1].getLevel())
-			if win[1].getHistory():
-				for h in win[1].getHistory():
-					print "      {}".format(h)
-			print "   Best team of {}: {}".format(len(wins), ', '.join([x.getName()+' ('+str(x.getLevel())+')' for x in win[0]]))
+	for srow in values:
+		if not srow or not srow[0]:
 			break
-		print
+		print (srow)
+		
+		row = ['' for x in range(9)]
+		for x in range(len(srow)):
+			row[x] = srow[x]
+		
+		rec = Recruit(row[1], int(row[2]), int(row[3]), int(row[4]), 
+			int(row[5]), row[6], row[7], row[8])
+		type = row[0]
+		
+		if type == dividerTraining:
+			initialTraining = rec
+		elif type == dividerSquad:
+			squad.append(rec)
+		elif type == dividerMission:
+			goals.append(rec)
 
-print "MVPs:"
-print
+def main():
+	readCsv()
+			
+	goals.sort(key = lambda x: x.getLevel(), reverse = True)
 
-squadScore = [(mvp[s],s) for s in mvp]
-squadScore.sort(reverse = True)
+	mvp = {}
+	for s in squad:
+		mvp[s.getName()] = 0
 
-for score, name in squadScore:
-	print '{:4} {}'.format(score, name)
+	for goal in goals:
+		totalVictory = True
+		for goalZeroes in range(3,1,-1):
+			wins = [win for win in getWins(initialTraining, goal, goalZeroes)]
+			if wins:
+				break
+			totalVictory = False
+	
+		if wins:
+			print ("Lv.{} mission: {}".format(goal.getLevel(), goal.getName()))
+			if totalVictory:
+				print ("   TOTAL VICTORY!!!!!!!!!!!")
+			if goal.getLabels():
+				print ("   Affinities: {}".format(goal.getLabels()))
+			wins.sort(cmp = wincmp)
+		
+			for win in wins:
+				for x in win[0]:
+					mvp[x.getName()] += 1
+				print ("   Best training: Physical={}, Mental={}, Tactical={} Diff={} Effort={}".format(
+					win[1].getPhys(),win[1].getMent(),win[1].getTact(), win[2], win[1].getLevel()))
+				if win[1].getHistory():
+					for h in win[1].getHistory():
+						print ("      {}".format(h))
+				print ("   Best team of {}: {}".format(len(wins), ', '.join([x.getName()+' ('+str(x.getLevel())+')' for x in win[0]])))
+				break
+			print()
 
+	print ("MVPs:")
+	print()
+
+	squadScore = [(mvp[s],s) for s in mvp]
+	squadScore.sort(reverse = True)
+
+	for score, name in squadScore:
+		print ('{:4} {}'.format(score, name))
+
+if __name__ == '__main__':
+    main()
 
