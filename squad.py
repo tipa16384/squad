@@ -117,13 +117,13 @@ def getWins(initialTraining, goal, goalZeroes = 3):
 
 def wincmp(a,b):
 	global initialTraining
-	res = abs(int(round(a[2] - b[2])))
+	res = int(round(a[2] - b[2]))
 	if res:
 		return res
-	dist = abs(int(round(trainingDistance(a[1], initialTraining) - trainingDistance(b[1], initialTraining))))
+	dist = int(round(trainingDistance(a[1], initialTraining) - trainingDistance(b[1], initialTraining)))
 	if dist:
 		return dist
-	return abs(sum([x.getLevel() for x in a[0]]) - sum([x.getLevel() for x in b[0]]))
+	return sum([x.getLevel() for x in a[0]]) - sum([x.getLevel() for x in b[0]])
 
 def readCsv():
 	global initialTraining, goals, squad
@@ -165,7 +165,6 @@ def readCsv():
 	for srow in values:
 		if not srow or not srow[0]:
 			break
-		print (srow)
 		
 		row = ['' for x in range(9)]
 		for x in range(len(srow)):
