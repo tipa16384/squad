@@ -12,9 +12,6 @@ import sys
 
 trainingPoints = 400
 maxTraining = 6
-noTraining = False
-#csvfile = 'squad.csv'
-csvfile = '/cygdrive/e/Downloads/squad - squad.csv'
 
 dividerSquad = 'Squad'
 dividerMission = 'Missions'
@@ -29,7 +26,7 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 
 # The ID and range of a sample spreadsheet.
 SAMPLE_SPREADSHEET_ID = '1VYxKi_1jk1zm0F5tCT0BDaFUaBm6jAr9GEacl1c7GwE'
-SAMPLE_RANGE_NAME = 'squad!A2:I'
+SAMPLE_RANGE_NAME = 'squad!A2:J'
 
 def validTraining(training, trainingPoints):
 	#print 'testing',training,trainingPoints
@@ -47,6 +44,29 @@ def validTraining(training, trainingPoints):
 		return False
 	
 	return True
+
+def variant(trainingPoints, newName, newLevel, opt, pbonus, mbonus, tbonus):
+	tot = opt.getPhys() + pbonus + opt.getMent() + mbonus + opt.getTact() + tbonus
+	
+	if tot > trainingPoints:
+		if pbonus == 40:
+			mbonus = -20
+			tbonus = -20
+		elif pbonus == 20:
+			if mbonus == 20:
+				tbonus = -20
+			else:
+				mbonus = -20
+		elif mbonus == 40:
+			pbonus = -20
+			tbonus = -20
+		elif mbonus == 20:
+			pbonus = -20
+		else:
+			pbonus = -20
+			mbonus = -20
+	
+	return Recruit(newName, newLevel, opt.getPhys()+pbonus, opt.getMent()+mbonus, opt.getTact()+tbonus)
 
 def getTraining(initialTraining,trainingPoints):
 	options = [initialTraining]
@@ -66,12 +86,12 @@ def getTraining(initialTraining,trainingPoints):
 		newName = 'Training {}'.format(newLevel)
 		
 		variants = []
-		variants.append(Recruit(newName, newLevel, opt.getPhys()+40, opt.getMent()-20, opt.getTact()-20))
-		variants.append(Recruit(newName, newLevel, opt.getPhys()-20, opt.getMent()+40, opt.getTact()-20))
-		variants.append(Recruit(newName, newLevel, opt.getPhys()-20, opt.getMent()-20, opt.getTact()+40))
-		variants.append(Recruit(newName, newLevel, opt.getPhys()-40, opt.getMent()+20, opt.getTact()+20))
-		variants.append(Recruit(newName, newLevel, opt.getPhys()+20, opt.getMent()-40, opt.getTact()+20))
-		variants.append(Recruit(newName, newLevel, opt.getPhys()+20, opt.getMent()+20, opt.getTact()-40))
+		variants.append(variant(trainingPoints, newName, newLevel, opt, 40, 0, 0))
+		variants.append(variant(trainingPoints, newName, newLevel, opt, 0, 40, 0))
+		variants.append(variant(trainingPoints, newName, newLevel, opt, 0, 0, 40))
+		variants.append(variant(trainingPoints, newName, newLevel, opt, 20, 20, 0))
+		variants.append(variant(trainingPoints, newName, newLevel, opt, 20, 0, 20))
+		variants.append(variant(trainingPoints, newName, newLevel, opt, 0, 20, 20))
 		
 		for v in variants:
 			if validTraining(v, trainingPoints) and v not in options:
@@ -81,9 +101,9 @@ def getTraining(initialTraining,trainingPoints):
 		optLen = len(options)
 
 def mission(xyz, training, initialTraining, goal, goalZeroes):
-	if noTraining and (training != initialTraining):
-		return None
-		
+	for x in xyz:
+		x.setGoal(xyz, goal)
+	
 	phys = sum([x.getPhys(xyz, goal) for x in xyz])
 	ment = sum([x.getMent(xyz, goal) for x in xyz])
 	tact = sum([x.getTact(xyz, goal) for x in xyz])
@@ -96,7 +116,8 @@ def mission(xyz, training, initialTraining, goal, goalZeroes):
 	zeroes = sum([1 for z in [dphys, dment, dtact] if not z])
 	
 	if zeroes == goalZeroes:
-		return (xyz,training,diff)
+		affinities = [x.getActiveAffinity() for x in xyz if x.getActiveAffinity()]
+		return (xyz,training,diff,affinities)
 	else:
 		return None
 		
@@ -125,7 +146,7 @@ def wincmp(a,b):
 		return dist
 	return sum([x.getLevel() for x in a[0]]) - sum([x.getLevel() for x in b[0]])
 
-def readCsv():
+def readData():
 	global initialTraining, goals, squad
 	
 	"""Shows basic usage of the Sheets API.
@@ -166,12 +187,12 @@ def readCsv():
 		if not srow or not srow[0]:
 			break
 		
-		row = ['' for x in range(9)]
+		row = ['' for x in range(10)]
 		for x in range(len(srow)):
 			row[x] = srow[x]
 		
 		rec = Recruit(row[1], int(row[2]), int(row[3]), int(row[4]), 
-			int(row[5]), row[6], row[7], row[8])
+			int(row[5]), row[6], row[7])
 		type = row[0]
 		
 		if type == dividerTraining:
@@ -182,7 +203,7 @@ def readCsv():
 			goals.append(rec)
 
 def main():
-	readCsv()
+	readData()
 			
 	goals.sort(key = lambda x: x.getLevel(), reverse = True)
 
@@ -214,6 +235,8 @@ def main():
 				if win[1].getHistory():
 					for h in win[1].getHistory():
 						print ("      {}".format(h))
+				for x in win[3]:
+					print ("   Affinity: {}".format(x))
 				print ("   Best team of {}: {}".format(len(wins), ', '.join([x.getName()+' ('+str(x.getLevel())+')' for x in win[0]])))
 				break
 			print()

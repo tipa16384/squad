@@ -1,15 +1,146 @@
 #!/usr/bin/python
 
+import re
+import sys
+
+def affinityLog(rule, scrub, ability, increase, bonus):
+	scrub.setActiveAffinity('{} matched affinity {}'.format(scrub.getName(), rule))
+	#print scrub.getActiveAffinity()
+
+def activeSquadron(scrub, squad, goal, m, affinitybonus):
+	ability = m.group(1)
+	increase = float(m.group(2))/100.0 + 1.0
+	
+	bonus = decodeAbility(ability, increase, affinitybonus)
+	
+	affinityLog('activeSquadron', scrub, ability, increase, bonus)
+	
+	return bonus
+
+def accompanying(scrub, squad, goal, m, affinitybonus):
+	ability = m.group(2)
+	increase = float(m.group(3))/100.0 + 1.0
+	label = m.group(1).upper()
+	
+	bonus = (1.0,1.0,1.0)
+	
+	for x in squad:
+		if x.getName() != scrub.getName():
+			if label in x.getLabels().upper():
+				bonus = decodeAbility(ability, increase, affinitybonus)
+				affinityLog('accompanying', scrub, ability, increase, bonus)
+				break
+	
+	return bonus
+
+def notaccompanying(scrub, squad, goal, m, affinitybonus):
+	ability = m.group(1)
+	increase = float(m.group(2))/100.0 + 1.0
+
+	# find own race
+	race = None
+	
+	for x in scrub.getLabels().upper().split():
+		if x in ['AURA', 'LALAFELL', 'MIQOTE', 'ROEGADYN', 'HYUR', 'ELEZEN']:
+			race = x
+			break
+	
+	if not race:
+		print "No race found for",scrub
+		sys.exit(1)
+
+	for x in squad:
+		if x.getName() != scrub.getName():
+			if race in x.getLabels().upper():
+				return (1.0,1.0,1.0)
+
+	bonus = decodeAbility(ability, increase, affinitybonus)
+	affinityLog('notaccompanying', scrub, ability, increase, bonus)
+	
+	return bonus
+
+def sameclass(scrub, squad, goal, m, affinitybonus):
+	ability = m.group(1)
+	increase = float(m.group(2))/100.0 + 1.0
+
+	# find own class
+	job = None
+	
+	for x in scrub.getLabels().upper().split():
+		if x in ['CONJURER', 'ARCANIST', 'LANCER', 'ARCHER', 'THAUMATURGE', 'ROGUE', 'WARRIOR', 'GLADIATOR', 'PUGILIST']:
+			job = x
+			break
+	
+	if not job:
+		print "No job found for", scrub
+		sys.exit(1)
+
+	for x in squad:
+		if x.getName() != scrub.getName():
+			if job in x.getLabels().upper():
+				bonus = decodeAbility(ability, increase, affinitybonus)
+				affinityLog('sameclass', scrub, ability, increase, bonus)
+				return bonus
+	
+	return (1.0,1.0,1.0)
+
+def nobonus(scrub, squad, goal, m, affinitybonus):
+	return (1.0,1.0,1.0)
+	
+def decodeAbility(ability, increase, affinitybonus):
+	p = 1.0
+	m = 1.0
+	t = 1.0
+	
+	if ability == 'physical ability':
+		p *= increase * affinitybonus
+	elif ability == 'mental ability':
+		m *= increase * affinitybonus
+	elif ability == 'tactical ability':
+		t *= increase * affinitybonus
+	
+	return (p,m,t)
+	
+affinityPatterns = [
+	(u'^When an active squadron member\, (.+) is increased by (\d+)\%$', activeSquadron),
+	(u'^When accompanying a (.*)\, (.+) is increased by (\d+)\%$', accompanying),
+	(u'^When not accompanying someone of the same race, (.+) is increased by (\d+)\%$', notaccompanying),
+	(u'^When accompanying someone of the same class, (.+) is increased by (\d+)\%$', sameclass),
+	(u'^When accompanying a (.*)\, there is a (\d+)\% chance to receive gatherers\' scrips$', nobonus)
+]
+
+def decodeAffinity(scrub, squad, goal, affinitybonus):
+	chem = scrub.getFullChemistry()
+	
+	found = False
+	func = None
+	
+	for p in affinityPatterns:
+		m = re.match(p[0], chem)
+		if m and p[1]:
+			func = p[1]
+			found = True
+			break
+
+	if not found:
+		print "Could not find",scrub,chem
+		sys.exit(1)
+
+	return func(scrub, squad, goal, m, affinitybonus)
+	
 class Recruit():
-	def __init__(self, name, level, phys, ment, tact, labels='', chemistry='', effect=''):
+	def __init__(self, name, level, phys, ment, tact, labels='', fullchemistry=''):
 		self.name = name
 		self.level = level
 		self.phys = phys
 		self.ment = ment
 		self.tact = tact
+		self.physbonus = 1.0
+		self.mentbonus = 1.0
+		self.tactbonus = 1.0
 		self.labels = labels
-		self.chemistry = chemistry
-		self.effect = effect
+		self.fullchemistry = fullchemistry
+		self.activeaffinity = ''
 		self.history = []
 		
 	def __eq__(self, other):
@@ -31,6 +162,12 @@ class Recruit():
 	def __repr__(self):
 		return self.name
 	
+	def setActiveAffinity(self, affine):
+		self.activeaffinity = affine
+	
+	def getActiveAffinity(self):
+		return self.activeaffinity
+	
 	def getName(self):
 		return self.name
 	
@@ -40,14 +177,24 @@ class Recruit():
 	def getLabels(self):
 		return self.labels
 
-	def getChemistry(self):
-		return self.chemistry
-	
 	def getHistory(self):
 		return self.history
 	
 	def setHistory(self, history):
 		self.history = history
+	
+	def getFullChemistry(self):
+		return self.fullchemistry
+	
+	def setFullChemistry(self, fullchemistry):
+		self.fullchemistry = fullchemistry
+	
+	def setGoal(self, squad, goal):
+		self.activeaffinity = ''
+		affinitybonus = 2.0 if self.getAffinity(goal) else 1.0
+		self.physbonus, self.mentbonus, self.tactbonus = decodeAffinity(self, squad, goal, affinitybonus)
+		if self.activeaffinity and affinitybonus == 2.0:
+			self.activeaffinity = '{} - MAX AFFINITY'.format(self.activeaffinity)
 	
 	def getAffinity(self, goal):
 		if not goal or not self.labels or not goal.getLabels():
@@ -57,46 +204,17 @@ class Recruit():
 		return len([t for t in toks if t in affinities]) > 0
 
 	def getPhys(self, squad=None, goal=None):
-		if squad:
-			return self.getStat('phys', lambda x: x.getPhys(), squad, goal)
-		return self.phys
+		return self.phys * self.physbonus
 
 	def getMent(self, squad=None, goal=None):
-		if squad:
-			return self.getStat('ment', lambda x: x.getMent(), squad, goal)
-		return self.ment
+		return self.ment * self.mentbonus
 
 	def getTact(self, squad=None, goal=None):
-		if squad:
-			return self.getStat('tact', lambda x: x.getTact(), squad, goal)
-		return self.tact
-	
-	def getStat(self, stat, statter, squad=None, goal=None):
-		bonus = 0
-		if squad and stat in self.effect:
-			toks = self.chemistry.split(' ')
-			#print "Chemistry",toks
-			count = countLabels(squad, toks[0])
-			
-			if toks[0] == 'Level':
-				count = self.getLevel()
-			
-			if toks[1] == '<' and count < int(toks[2]):
-				ineffect = True
-			elif toks[1] == '>' and count > int(toks[2]):
-				ineffect = True
-			else:
-				ineffect = False;
-			if ineffect:
-				toks = self.effect.split(' ')
-				bonus = statter(self) * float(toks[2])
-		if self.getAffinity(goal):
-			bonus *= 2
-		return statter(self) + bonus
+		return self.tact * self.tactbonus
 	
 	def toDict(self, type):
 		dict = {}
-		# ['type', 'name', 'level', 'physical', 'mental', 'tactical', 'labels', 'chemistry', 'effect']
+
 		dict['type'] = type
 		dict['name'] = self.name
 		dict['level'] = self.level
@@ -104,8 +222,7 @@ class Recruit():
 		dict['mental'] = self.ment
 		dict['tactical'] = self.tact
 		dict['labels'] = self.labels
-		dict['chemistry'] = self.chemistry
-		dict['effect'] = self.effect
+		dict['fullchemistry'] = self.fullchemistry
 		return dict
 
 def countLabels(squad, tag):
