@@ -3,13 +3,16 @@
 import re
 import sys
 
+races = ['AURA', 'LALAFELL', 'MIQOTE', 'ROEGADYN', 'HYUR', 'ELEZEN']
+jobs = ['CONJURER', 'ARCANIST', 'LANCER', 'ARCHER', 'THAUMATURGE', 'ROGUE', 'WARRIOR', 'GLADIATOR', 'PUGILIST']
+
 def affinityLog(rule, scrub, ability, increase, bonus):
-	scrub.setActiveAffinity('{} matched affinity {}'.format(scrub.getName(), rule))
+	scrub.setActiveAffinity('{} matched affinity {} bonus of {}'.format(scrub.getName(), rule, bonus))
 	#print scrub.getActiveAffinity()
 
 def activeSquadron(scrub, squad, goal, m, affinitybonus):
 	ability = m.group(1)
-	increase = float(m.group(2))/100.0 + 1.0
+	increase = float(m.group(2))/100.0
 	
 	bonus = decodeAbility(ability, increase, affinitybonus)
 	
@@ -19,29 +22,33 @@ def activeSquadron(scrub, squad, goal, m, affinitybonus):
 
 def accompanying(scrub, squad, goal, m, affinitybonus):
 	ability = m.group(2)
-	increase = float(m.group(3))/100.0 + 1.0
+	increase = float(m.group(3))/100.0
 	label = m.group(1).upper()
 	
+	earned = True if affinitybonus > 1.0 else False
 	bonus = (1.0,1.0,1.0)
-	
+
 	for x in squad:
 		if x.getName() != scrub.getName():
 			if label in x.getLabels().upper():
-				bonus = decodeAbility(ability, increase, affinitybonus)
-				affinityLog('accompanying', scrub, ability, increase, bonus)
+				earned = True
 				break
 	
+	if earned:
+		bonus = decodeAbility(ability, increase, affinitybonus)
+		affinityLog('accompanying', scrub, ability, increase, bonus)
+
 	return bonus
 
 def notaccompanying(scrub, squad, goal, m, affinitybonus):
 	ability = m.group(1)
-	increase = float(m.group(2))/100.0 + 1.0
+	increase = float(m.group(2))/100.0
 
 	# find own race
 	race = None
 	
 	for x in scrub.getLabels().upper().split():
-		if x in ['AURA', 'LALAFELL', 'MIQOTE', 'ROEGADYN', 'HYUR', 'ELEZEN']:
+		if x in races:
 			race = x
 			break
 	
@@ -49,25 +56,62 @@ def notaccompanying(scrub, squad, goal, m, affinitybonus):
 		print "No race found for",scrub
 		sys.exit(1)
 
-	for x in squad:
-		if x.getName() != scrub.getName():
-			if race in x.getLabels().upper():
-				return (1.0,1.0,1.0)
+	earned = True if affinitybonus > 1.0 else False
+	bonus = (1.0,1.0,1.0)
 
-	bonus = decodeAbility(ability, increase, affinitybonus)
-	affinityLog('notaccompanying', scrub, ability, increase, bonus)
+	if not earned:
+		earned = True
+		for x in squad:
+			if x.getName() != scrub.getName():
+				if race in x.getLabels().upper():
+					earned = False
+					break
+
+	if earned:
+		bonus = decodeAbility(ability, increase, affinitybonus)
+		affinityLog('notaccompanying', scrub, ability, increase, bonus)
+	
+	return bonus
+
+def differentRace(scrub, squad, goal, m, affinitybonus):
+	"no dupes among squad races"
+	
+	ability = m.group(1)
+	increase = float(m.group(2))/100.0
+	
+	raceCount = {}
+	for r in races:
+		raceCount[r] = 0
+	
+	for s in squad:
+		for r in races:
+			if r in s.getLabels():
+				raceCount[r] += 1
+				break
+	
+	earned = True
+	bonus = (1.0,1.0,1.0)
+	
+	for r in raceCount:
+		if raceCount[r] > 1:
+			earned = False
+			break
+	
+	if earned:
+		bonus = decodeAbility(ability, increase, affinitybonus)
+		affinityLog('differentRace', scrub, ability, increase, bonus)
 	
 	return bonus
 
 def sameclass(scrub, squad, goal, m, affinitybonus):
 	ability = m.group(1)
-	increase = float(m.group(2))/100.0 + 1.0
+	increase = float(m.group(2))/100.0
 
 	# find own class
 	job = None
 	
 	for x in scrub.getLabels().upper().split():
-		if x in ['CONJURER', 'ARCANIST', 'LANCER', 'ARCHER', 'THAUMATURGE', 'ROGUE', 'WARRIOR', 'GLADIATOR', 'PUGILIST']:
+		if x in jobs:
 			job = x
 			break
 	
@@ -75,14 +119,20 @@ def sameclass(scrub, squad, goal, m, affinitybonus):
 		print "No job found for", scrub
 		sys.exit(1)
 
+	earned = True if affinitybonus > 1.0 else False
+	bonus = (1.0,1.0,1.0)
+		
 	for x in squad:
 		if x.getName() != scrub.getName():
 			if job in x.getLabels().upper():
-				bonus = decodeAbility(ability, increase, affinitybonus)
-				affinityLog('sameclass', scrub, ability, increase, bonus)
-				return bonus
+				earned = True
+				break
+
+	if earned:
+		bonus = decodeAbility(ability, increase, affinitybonus)
+		affinityLog('sameclass', scrub, ability, increase, bonus)
 	
-	return (1.0,1.0,1.0)
+	return bonus
 
 def nobonus(scrub, squad, goal, m, affinitybonus):
 	return (1.0,1.0,1.0)
@@ -93,20 +143,23 @@ def decodeAbility(ability, increase, affinitybonus):
 	t = 1.0
 	
 	if ability == 'physical ability':
-		p *= increase * affinitybonus
+		p += increase * affinitybonus
 	elif ability == 'mental ability':
-		m *= increase * affinitybonus
+		m += increase * affinitybonus
 	elif ability == 'tactical ability':
-		t *= increase * affinitybonus
+		t += increase * affinitybonus
 	
 	return (p,m,t)
 	
 affinityPatterns = [
-	(u'^When an active squadron member\, (.+) is increased by (\d+)\%$', activeSquadron),
-	(u'^When accompanying a (.*)\, (.+) is increased by (\d+)\%$', accompanying),
-	(u'^When not accompanying someone of the same race, (.+) is increased by (\d+)\%$', notaccompanying),
-	(u'^When accompanying someone of the same class, (.+) is increased by (\d+)\%$', sameclass),
-	(u'^When accompanying a (.*)\, there is a (\d+)\% chance to receive gatherers\' scrips$', nobonus)
+	(u'^When an active squadron member\, (.+) is increased by (\d+)\%.?$', activeSquadron),
+	(u'^When accompanying (?:a|an) (.*)\, (.+) is increased by (\d+)\%.?$', accompanying),
+	(u'^When accompanying (?:a|an) (.*)\, there is a (\d+)\% chance to receive (.+).?$', nobonus),
+	(u'^When not accompanying someone of the same race, (.+) is increased by (\d+)\%.?$', notaccompanying),
+	(u'^When accompanying someone of the same class, (.+) is increased by (\d+)\%.?$', sameclass),
+	(u'^When accompanying someone of the same class, there is a (\d+)\% chance to receive (.+).?$', nobonus),
+	(u'^When all squadron members are of a different race, (.+) is increased by (\d+)\%.?$', differentRace),
+	(u'^$', nobonus)
 ]
 
 def decodeAffinity(scrub, squad, goal, affinitybonus):

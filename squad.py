@@ -45,28 +45,39 @@ def validTraining(training, trainingPoints):
 	
 	return True
 
-def variant(trainingPoints, newName, newLevel, opt, pbonus, mbonus, tbonus):
+def testtrainingtype(expected, actual):
+	if expected <> actual:
+		print ("expected '{}', got '{}'".format(expected, actual))
+		sys.exit(1)
+
+def variant(trainingPoints, newName, newLevel, opt, pbonus, mbonus, tbonus, trainingtype):
 	tot = opt.getPhys() + pbonus + opt.getMent() + mbonus + opt.getTact() + tbonus
 	
 	if tot > trainingPoints:
 		if pbonus == 40:
 			mbonus = -20
 			tbonus = -20
+			testtrainingtype('P', trainingtype)
 		elif pbonus == 20:
 			if mbonus == 20:
+				testtrainingtype('PM', trainingtype)
 				tbonus = -20
 			else:
+				testtrainingtype('PT', trainingtype)
 				mbonus = -20
 		elif mbonus == 40:
+			testtrainingtype('M', trainingtype)
 			pbonus = -20
 			tbonus = -20
 		elif mbonus == 20:
+			testtrainingtype('MT', trainingtype)
 			pbonus = -20
 		else:
+			testtrainingtype('T', trainingtype)
 			pbonus = -20
 			mbonus = -20
 	
-	return Recruit(newName, newLevel, opt.getPhys()+pbonus, opt.getMent()+mbonus, opt.getTact()+tbonus)
+	return Recruit(newName, newLevel, opt.getPhys()+pbonus, opt.getMent()+mbonus, opt.getTact()+tbonus, trainingtype)
 
 def getTraining(initialTraining,trainingPoints):
 	options = [initialTraining]
@@ -86,12 +97,12 @@ def getTraining(initialTraining,trainingPoints):
 		newName = 'Training {}'.format(newLevel)
 		
 		variants = []
-		variants.append(variant(trainingPoints, newName, newLevel, opt, 40, 0, 0))
-		variants.append(variant(trainingPoints, newName, newLevel, opt, 0, 40, 0))
-		variants.append(variant(trainingPoints, newName, newLevel, opt, 0, 0, 40))
-		variants.append(variant(trainingPoints, newName, newLevel, opt, 20, 20, 0))
-		variants.append(variant(trainingPoints, newName, newLevel, opt, 20, 0, 20))
-		variants.append(variant(trainingPoints, newName, newLevel, opt, 0, 20, 20))
+		variants.append(variant(trainingPoints, newName, newLevel, opt, 40, 0, 0, 'P'))
+		variants.append(variant(trainingPoints, newName, newLevel, opt, 0, 40, 0, 'M'))
+		variants.append(variant(trainingPoints, newName, newLevel, opt, 0, 0, 40, 'T'))
+		variants.append(variant(trainingPoints, newName, newLevel, opt, 20, 20, 0, 'PM'))
+		variants.append(variant(trainingPoints, newName, newLevel, opt, 20, 0, 20, 'PT'))
+		variants.append(variant(trainingPoints, newName, newLevel, opt, 0, 20, 20, 'MT'))
 		
 		for v in variants:
 			if validTraining(v, trainingPoints) and v not in options:
@@ -234,7 +245,7 @@ def main():
 					win[1].getPhys(),win[1].getMent(),win[1].getTact(), win[2], win[1].getLevel()))
 				if win[1].getHistory():
 					for h in win[1].getHistory():
-						print ("      {}".format(h))
+						print ("      {} {}".format(h, h.getLabels()))
 				for x in win[3]:
 					print ("   Affinity: {}".format(x))
 				print ("   Best team of {}: {}".format(len(wins), ', '.join([x.getName()+' ('+str(x.getLevel())+')' for x in win[0]])))
