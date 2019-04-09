@@ -85,12 +85,14 @@ def differentRace(scrub, squad, goal, m, affinitybonus):
 	
 	for s in squad:
 		for r in races:
-			if r in s.getLabels():
+			if r in s.getLabels().upper():
 				raceCount[r] += 1
 				break
 	
 	earned = True
 	bonus = (1.0,1.0,1.0)
+	
+	#print "races",raceCount,squad
 	
 	for r in raceCount:
 		if raceCount[r] > 1:
@@ -134,6 +136,35 @@ def sameclass(scrub, squad, goal, m, affinitybonus):
 	
 	return bonus
 
+def manysameclass(scrub, squad, goal, m, affinitybonus):
+	ability = m.group(2)
+	increase = float(m.group(3))/100.0
+	howmany = int(m.group(1))
+
+	counts = {}
+	for j in jobs:
+		counts[j] = 0
+		
+	for j in jobs:
+		for x in squad:
+			if j in x.getLabels().upper():
+				counts[j] += 1
+				break
+
+	earned = False
+	for c in counts:
+		if counts[c] >= howmany:
+			earned = True
+			break
+
+	bonus = (1.0,1.0,1.0)
+		
+	if earned:
+		bonus = decodeAbility(ability, increase, affinitybonus)
+		affinityLog('manysameclass', scrub, ability, increase, bonus)
+	
+	return bonus
+
 def nobonus(scrub, squad, goal, m, affinitybonus):
 	return (1.0,1.0,1.0)
 	
@@ -159,6 +190,7 @@ affinityPatterns = [
 	(u'^When accompanying someone of the same class, (.+) is increased by (\d+)\%.?$', sameclass),
 	(u'^When accompanying someone of the same class, there is a (\d+)\% chance to receive (.+).?$', nobonus),
 	(u'^When all squadron members are of a different race, (.+) is increased by (\d+)\%.?$', differentRace),
+	(u'^When (\d+) or more members are of the same class, (.+) is increased by (\d+)\%.?$', manysameclass),
 	(u'^$', nobonus)
 ]
 

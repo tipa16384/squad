@@ -239,8 +239,9 @@ def main():
 			wins.sort(cmp = wincmp)
 		
 			for win in wins:
-				for x in win[0]:
-					mvp[x.getName()] += 1
+				if goal.getLevel() >= 50:
+					for x in win[0]:
+						mvp[x.getName()] += 1
 				print ("   Best training: Physical={}, Mental={}, Tactical={} Diff={} Effort={}".format(
 					win[1].getPhys(),win[1].getMent(),win[1].getTact(), win[2], win[1].getLevel()))
 				if win[1].getHistory():
