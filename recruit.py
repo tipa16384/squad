@@ -183,14 +183,15 @@ def decodeAbility(ability, increase, affinitybonus):
 	return (p,m,t)
 	
 affinityPatterns = [
-	(u'^When an active squadron member\, (.+) is increased by (\d+)\%.?$', activeSquadron),
-	(u'^When accompanying (?:a|an) (.*)\, (.+) is increased by (\d+)\%.?$', accompanying),
+	(u'^When an active squadron member\, (.+) (?:is increased|increase) by (\d+)\%.?$', activeSquadron),
+	(u'^When accompanying (?:a|an) (.*)\, (.+) (?:is increased|increase) by (\d+)\%.?$', accompanying),
 	(u'^When accompanying (?:a|an) (.*)\, there is a (\d+)\% chance to receive (.+).?$', nobonus),
-	(u'^When not accompanying someone of the same race, (.+) is increased by (\d+)\%.?$', notaccompanying),
-	(u'^When accompanying someone of the same class, (.+) is increased by (\d+)\%.?$', sameclass),
+	(u'^When not accompanying someone of the same race, (.+) (?:is increased|increase) by (\d+)\%.?$', notaccompanying),
+	(u'^When accompanying someone of the same class, (.+) (?:is increased|increase) by (\d+)\%.?$', sameclass),
 	(u'^When accompanying someone of the same class, there is a (\d+)\% chance to receive (.+).?$', nobonus),
-	(u'^When all squadron members are of a different race, (.+) is increased by (\d+)\%.?$', differentRace),
-	(u'^When (\d+) or more members are of the same class, (.+) is increased by (\d+)\%.?$', manysameclass),
+	(u'^When all squadron members are of a different race, (.+) (?:is increased|increase) by (\d+)\%.?$', differentRace),
+	(u'^When (\d+) or more members are of the same class, (.+) (?:is increased|increase) by (\d+)\%.?$', manysameclass),
+	(u'^When above level 50, there is a (\d+)\% chance to receive (.+).?$', nobonus),
 	(u'^$', nobonus)
 ]
 
